@@ -8,6 +8,7 @@ from PyQt5.QtGui import QColor, QBrush, QWheelEvent, QPainter
 from PyQt5.QtCore import Qt, QPointF, QTimer
 import ntpath
 import os
+import hashlib
 
 class BubbleView(QGraphicsView):
     def __init__(self, parent=None):
@@ -21,7 +22,7 @@ class BubbleView(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setInteractive(True)
-
+        self.setDragMode(QGraphicsView.RubberBandDrag) 
         self.gravity = 0  # Intensité de la gravité
         self.timer = QTimer(self)
         self.timer.setInterval(10)  # Interval de rafraîchissement en millisecondes
@@ -52,7 +53,7 @@ class BubbleView(QGraphicsView):
 class FileBubble(QGraphicsEllipseItem):
     def __init__(self, file_name, file_type, file_path):
         super().__init__()
-
+        self.setFlag(self.ItemIsSelectable)
         self.file_name = file_name
         self.file_type = file_type
         self.file_path = file_path
@@ -96,7 +97,7 @@ class FileBubble(QGraphicsEllipseItem):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
+        self.directory_counter = 0 
         self.setWindowTitle("Explorateur de bulles")
         self.showFullScreen()  # Affiche l'application en plein écran
 
@@ -133,6 +134,18 @@ class MainWindow(QMainWindow):
         file_name, file_ext = os.path.splitext(base_name)
         return file_name, file_ext
 
+    def get_positions(self):
+        base_x = (self.directory_counter % 10) * 200  # Changez 10 et 200 en fonction de vos besoins
+        base_y = (self.directory_counter // 10) * 200
+        
+        positions = []
+        for i in range(10):
+            for j in range(10):
+                x = base_x + i * 20
+                y = base_y + j * 20
+                positions.append((x, y))
+        return positions
+
     def open_file_dialog(self):
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getOpenFileName(self, "Sélectionner un fichier", "", "Fichiers texte (*.txt)")
@@ -148,12 +161,29 @@ class MainWindow(QMainWindow):
                 self.label_selected_file.setText(f"Fichier sélectionné : {file_name}")
 
                 # Parcours chaque ligne et détecte les autres fichiers mentionnés
-                for index, line in enumerate(content.split("\n")):
-                    File_Name, File_type = self.extract_file_info(line)
-                    bubble = FileBubble(File_Name, File_type,line)
-                    bubble.setPos(random.randint(0, self.width() - 50), random.randint(0, self.height() - 50))
-                    self.bubble_view.scene().addItem(bubble)
-                self.label_Nombre.setText(f"Nombre : {nombre}")
+        directory_positions = {}  # Pour garder une trace des positions pour chaque sous-dossier
+        for index, line in enumerate(content.split("\n")):
+            File_Name, File_type = self.extract_file_info(line)
+            bubble = FileBubble(File_Name, File_type, line)  # Inclut le chemin d'accès lors de la création de la bulle
+            
+            # Génération des coordonnées basées sur le chemin du fichier
+            directory = os.path.dirname(line)
+            if directory not in directory_positions:
+                directory_positions[directory] = {
+                    'positions': self.get_positions(),
+                    'current_index': 0
+                }
+                self.directory_counter += 1  # Incrémentez le compteur pour le prochain sous-dossier
+
+            positions = directory_positions[directory]['positions']
+            current_index = directory_positions[directory]['current_index']
+            x, y = positions[current_index % len(positions)]  # Utilise le modulo pour éviter les erreurs d'index
+            bubble.setPos(x, y)
+            
+            # Incrémenter l'index de la position pour le prochain fichier du même sous-dossier
+            directory_positions[directory]['current_index'] += 1
+
+            self.bubble_view.scene().addItem(bubble)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
