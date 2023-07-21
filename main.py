@@ -2,7 +2,7 @@ import sys
 import random
 from PyQt5.QtWidgets import ( QGraphicsEllipseItem,
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QGraphicsView, QGraphicsScene, QFileDialog, QLabel
+    QGraphicsView, QGraphicsScene, QFileDialog, QLabel, QMenuBar
 )
 from PyQt5.QtGui import QColor, QBrush, QWheelEvent, QPainter
 from PyQt5.QtCore import Qt, QPointF, QTimer
@@ -11,7 +11,7 @@ import os
 import hashlib
 
 class BubbleView(QGraphicsView):
-    def __init__(self, parent=None):
+    def __init__(self, parent =None):
         super().__init__(parent)
         self.setScene(QGraphicsScene(self))
         self.setRenderHint(QPainter.Antialiasing)  # Améliore l'apparence des bulles
@@ -99,17 +99,23 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.directory_counter = 0 
         self.setWindowTitle("Explorateur de bulles")
-        self.showFullScreen()  # Affiche l'application en plein écran
+        self.showFullScreen()  
 
         main_widget = QWidget(self)
         self.setCentralWidget(main_widget)
 
-        layout = QHBoxLayout(main_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(main_widget)
+
+        # Créer une barre de menus personnalisée
+        menu_bar = QMenuBar()
+        menu1 = menu_bar.addMenu("Menu 1")
+        action = menu1.addAction("Option 1")
+        # action.triggered.connect(self.some_method) # décommenter ceci pour connecter l'action à une fonction
+        layout.addWidget(menu_bar)
 
         # Volet des boutons d'options
         options_widget = QWidget(self)
-        options_layout = QVBoxLayout(options_widget)
+        options_layout = QHBoxLayout(options_widget)
         label_selected_file = QLabel("Fichier sélectionné : ")
         label_Nombre = QLabel("Nombre de fichier : ")
         options_layout.addWidget(label_selected_file)
@@ -129,6 +135,9 @@ class MainWindow(QMainWindow):
         self.label_Nombre = label_Nombre
         self.bubble_view = bubble_view
 
+    def some_method(self):
+        print('menu2')
+            
     def extract_file_info(self, file_path):
         base_name = ntpath.basename(file_path)
         file_name, file_ext = os.path.splitext(base_name)
