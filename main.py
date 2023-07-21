@@ -2,7 +2,7 @@ import sys
 import random
 from PyQt5.QtWidgets import ( QGraphicsEllipseItem,
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QGraphicsView, QGraphicsScene, QFileDialog, QLabel, QMenu
+    QGraphicsView, QGraphicsScene, QFileDialog, QLabel, QMenuBar
 )
 from PyQt5.QtGui import QColor, QBrush, QWheelEvent, QPainter
 from PyQt5.QtCore import Qt, QPointF, QTimer
@@ -98,31 +98,20 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Explorateur de bulles")
-        self.showMaximized()  # Affiche l'application en plein écran
+        self.showFullScreen()  
 
         main_widget = QWidget(self)
         self.setCentralWidget(main_widget)
 
-        layout = QHBoxLayout(main_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(main_widget)
 
-        # Ajouter une barre de menus
-        menu_bar = self.menuBar()
-        menu1 = QMenu("Menu 1", self)
-        menu2 = QMenu("Menu 2", self)
-        menu3 = QMenu("Menu 3", self)
-        menu4 = QMenu("Menu 4", self)
-        menu_bar.addMenu(menu1)
-        menu_bar.addMenu(menu2)
-        menu_bar.addMenu(menu3)
-        menu_bar.addMenu(menu4)
-
-        main_widget = QWidget(self)
-        self.setCentralWidget(main_widget)
+        # Créer une barre de menus personnalisée
+        menu_bar = QMenuBar()
+        menu1 = menu_bar.addMenu("Menu 1")
         action = menu1.addAction("Option 1")
-        action.triggered.connect(self.some_method)
+        # action.triggered.connect(self.some_method) # décommenter ceci pour connecter l'action à une fonction
+        layout.addWidget(menu_bar)
 
-        
         # Volet des boutons d'options
         options_widget = QWidget(self)
         options_layout = QHBoxLayout(options_widget)
