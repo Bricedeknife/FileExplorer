@@ -8,90 +8,9 @@ from PyQt5.QtGui import QColor, QBrush, QWheelEvent, QPainter
 from PyQt5.QtCore import Qt, QPointF, QTimer
 import ntpath
 import os
+from file_bubble import FileBubble
+from bubble_view import BubbleView
 
-class BubbleView(QGraphicsView):
-    def __init__(self, parent =None):
-        super().__init__(parent)
-        self.setScene(QGraphicsScene(self))
-        self.setRenderHint(QPainter.Antialiasing)  # Améliore l'apparence des bulles
-
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.setInteractive(True)
-
-        self.gravity = 0  # Intensité de la gravité
-        self.timer = QTimer(self)
-        self.timer.setInterval(10)  # Interval de rafraîchissement en millisecondes
-        self.timer.timeout.connect(self.update_positions)
-        self.timer.start()
-        self.viewport().setMouseTracking(True)
-
-    def update_positions(self):
-        for item in self.scene().items():
-            if isinstance(item, FileBubble):
-                pos = item.pos()
-                velocity = item.data(Qt.UserRole)
-                velocity.setY(velocity.y() + self.gravity)  # Ajoute la gravité à la vitesse verticale
-                new_pos = pos + velocity
-                item.setPos(new_pos)
-                item.setData(Qt.UserRole, velocity)
-
-    def wheelEvent(self, event: QWheelEvent):
-        zoom_out_factor = 1 / 1.2
-        zoom_in_factor = 1.2
-        zoom_delta = event.angleDelta().y()
-
-        if zoom_delta > 0:
-            self.scale(zoom_in_factor, zoom_in_factor)
-        else:
-            self.scale(zoom_out_factor, zoom_out_factor)
-
-class FileBubble(QGraphicsEllipseItem):
-    def __init__(self, file_name, file_type, file_path):
-        super().__init__()
-
-        self.file_name = file_name
-        self.file_type = file_type
-        self.file_path = file_path
-        self.drag = 0.90  # Facteur de décélération (0.90 pour un ralentissement progressif)
-        self.setRect(0, 0, 15, 15)  # Taille de la bulle
-        self.setFlag(self.ItemIsMovable)  # Rend la bulle déplaçable
-        self.setFlag(self.ItemSendsGeometryChanges)  # Active les notifications de changement de géométrie
-        self.drag = 0.95
-
-        # Définis la couleur en fonction du type de fichier
-        if file_type == '.pdf':
-            self.setBrush(QBrush(Qt.red))
-        elif file_type == '.acd':
-            self.setBrush(QBrush(Qt.yellow))
-        elif file_type == '.docx':
-            self.setBrush(QBrush(Qt.white))
-        else:
-            self.setBrush(QBrush(Qt.gray))  # Autres types de fichiers
-
-        self.setData(Qt.UserRole, QPointF(0, 0))  # Initialise la vitesse à (0, 0)
-        self.setToolTip("")
-        self.setAcceptHoverEvents(True)
-
-    def mouseReleaseEvent(self, event):
-        super().mouseReleaseEvent(event)
-        velocity = self.data(Qt.UserRole)
-        # Mettre à jour la vitesse uniquement si la bulle est en mouvement
-        if velocity.manhattanLength() > 0:
-            # Appliquer la décélération
-            velocity *= self.drag
-            self.setData(Qt.UserRole, velocity)
-
-    def hoverEnterEvent(self, event):
-        super().hoverEnterEvent(event)
-        self.setToolTip(f"{self.file_name} - > {self.file_path}")
-
-    def hoverLeaveEvent(self, event):
-        super().hoverLeaveEvent(event)
-        self.setToolTip("")
 
 class MainWindow(QMainWindow):
     def __init__(self):
