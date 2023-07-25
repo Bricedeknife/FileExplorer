@@ -1,14 +1,15 @@
 import sys
 import random
-from PyQt5.QtWidgets import ( QGraphicsEllipseItem,
+from PyQt5.QtWidgets import ( QGraphicsEllipseItem, QGraphicsRectItem, 
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QGraphicsView, QGraphicsScene, QFileDialog, QLabel, QMenuBar
+    QGraphicsView, QGraphicsScene, QFileDialog, QLabel, QMenuBar,QGraphicsTextItem
 )
-from PyQt5.QtGui import QColor, QBrush, QWheelEvent, QPainter
-from PyQt5.QtCore import Qt, QPointF, QTimer
+from PyQt5.QtGui import QColor, QBrush, QWheelEvent, QPainter, QFont, QPen
+from PyQt5.QtCore import Qt, QPointF, QTimer, QMarginsF 
 import ntpath
 import os
 import hashlib
+from utils import detect_file_encoding
 
 class BubbleView(QGraphicsView):
     def __init__(self, parent =None):
@@ -62,6 +63,15 @@ class FileBubble(QGraphicsEllipseItem):
         self.setFlag(self.ItemIsMovable)  # Rend la bulle déplaçable
         self.setFlag(self.ItemSendsGeometryChanges)  # Active les notifications de changement de géométrie
         self.drag = 0.95
+
+        self.text_item = QGraphicsTextItem(file_name, self)  # using first 5 characters of file_name, adjust as needed
+        self.text_item.setFont(QFont('Arial', 4))  # set font size
+
+        # Center the text item within the bubble.
+        self.text_item.setPos(
+            (self.rect().width() - self.text_item.boundingRect().width()) / 2,
+            (self.rect().height() - self.text_item.boundingRect().height()) / 2
+        )
 
         # Définis la couleur en fonction du type de fichier
         if file_type == '.pdf':
@@ -144,55 +154,68 @@ class MainWindow(QMainWindow):
         return file_name, file_ext
 
     def get_positions(self):
-        base_x = (self.directory_counter % 10) * 200  # Changez 10 et 200 en fonction de vos besoins
-        base_y = (self.directory_counter // 10) * 200
-        
+        base_x = (self.directory_counter % 10) * 2000  # Change 10 and 200 based on your needs
+        base_y = (self.directory_counter // 10) * 2000
+
         positions = []
-        for i in range(10):
-            for j in range(10):
-                x = base_x + i * 20
-                y = base_y + j * 20
-                positions.append((x, y))
+        for i in range(50):  # Increase the range value if you have more than 50 files in a subfolder
+            x = base_x
+            y = base_y + i * 20  # Increase y coordinate for each new file
+            positions.append((x, y))
         return positions
+
+
 
     def open_file_dialog(self):
         file_dialog = QFileDialog()
-        file_path, _ = file_dialog.getOpenFileName(self, "Sélectionner un fichier", "", "Fichiers texte (*.txt)")
+        file_path, _ = file_dialog.getOpenFileName(self, "Select a file", "", "Text files (*.txt)")
         if file_path:
-            # Traite le fichier sélectionné, par exemple, affiche son contenu
             with open(file_path, 'r', encoding='macRoman') as file:
                 content = file.read()
                 nombre = len(content.split('\n'))
-                self.bubble_view.scene().clear()  # Efface la scène
+                self.bubble_view.scene().clear()  # Clear the scene
 
-                # Affiche le nom du fichier sélectionné
-                file_name = file_path.split("/")[-1]  # Récupère le nom du fichier sans le chemin
-                self.label_selected_file.setText(f"Fichier sélectionné : {file_name}")
+                file_name = file_path.split("/")[-1]  # Get the file name without the path
+                self.label_selected_file.setText(f"Selected file: {file_name}")
 
-                # Parcours chaque ligne et détecte les autres fichiers mentionnés
-        directory_positions = {}  # Pour garder une trace des positions pour chaque sous-dossier
+        directory_positions = {}
+        directory_items = {}
         for index, line in enumerate(content.split("\n")):
             File_Name, File_type = self.extract_file_info(line)
-            bubble = FileBubble(File_Name, File_type, line)  # Inclut le chemin d'accès lors de la création de la bulle
-            
-            # Génération des coordonnées basées sur le chemin du fichier
+            bubble = FileBubble(File_Name, File_type, line)
+
             directory = os.path.dirname(line)
             if directory not in directory_positions:
                 directory_positions[directory] = {
                     'positions': self.get_positions(),
                     'current_index': 0
                 }
-                self.directory_counter += 1  # Incrémentez le compteur pour le prochain sous-dossier
+                self.directory_counter += 1
 
             positions = directory_positions[directory]['positions']
             current_index = directory_positions[directory]['current_index']
-            x, y = positions[current_index % len(positions)]  # Utilise le modulo pour éviter les erreurs d'index
+            x, y = positions[current_index % len(positions)]
             bubble.setPos(x, y)
-            
-            # Incrémenter l'index de la position pour le prochain fichier du même sous-dossier
             directory_positions[directory]['current_index'] += 1
 
             self.bubble_view.scene().addItem(bubble)
+
+            # Get or create the rect_item for this directory
+            rect_item = directory_items.get(directory)
+            if rect_item is None:
+                rect_item = QGraphicsRectItem()
+                self.bubble_view.scene().addItem(rect_item)
+                directory_items[directory] = rect_item
+
+                # Add the directory name above the rectangle
+                text_item = QGraphicsTextItem(directory, rect_item)
+                text_item.setPos(rect_item.rect().x(), rect_item.rect().y() - text_item.boundingRect().height())
+
+            # Compute the new rectangle
+            united_rect = rect_item.rect().united(bubble.sceneBoundingRect())
+            margined_rect = united_rect.adjusted(-1, -1, 1, 1)
+            rect_item.setRect(margined_rect)
+            rect_item.setFlags(rect_item.ItemIsMovable)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

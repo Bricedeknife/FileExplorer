@@ -6,6 +6,6 @@ def detect_file_encoding(file_path):
     return result['encoding']
 
 # Example usage
-file_path = r'C:\Users\CAML078995\Desktop\dessin.txt'
+file_path = r'C:\Users\CAML078995\Desktop\SOUS.txt'
 encoding = detect_file_encoding(file_path)
 print('Encoding:', encoding)
