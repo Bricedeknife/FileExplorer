@@ -8,8 +8,6 @@ from PyQt5.QtGui import QColor, QBrush, QWheelEvent, QPainter, QFont, QPen
 from PyQt5.QtCore import Qt, QPointF, QTimer, QMarginsF 
 import ntpath
 import os
-import hashlib
-from utils import detect_file_encoding
 
 class BubbleView(QGraphicsView):
     def __init__(self, parent =None):
@@ -23,7 +21,7 @@ class BubbleView(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setInteractive(True)
-        self.setDragMode(QGraphicsView.RubberBandDrag) 
+
         self.gravity = 0  # Intensité de la gravité
         self.timer = QTimer(self)
         self.timer.setInterval(10)  # Interval de rafraîchissement en millisecondes
@@ -54,7 +52,7 @@ class BubbleView(QGraphicsView):
 class FileBubble(QGraphicsEllipseItem):
     def __init__(self, file_name, file_type, file_path):
         super().__init__()
-        self.setFlag(self.ItemIsSelectable)
+
         self.file_name = file_name
         self.file_type = file_type
         self.file_path = file_path
@@ -63,15 +61,6 @@ class FileBubble(QGraphicsEllipseItem):
         self.setFlag(self.ItemIsMovable)  # Rend la bulle déplaçable
         self.setFlag(self.ItemSendsGeometryChanges)  # Active les notifications de changement de géométrie
         self.drag = 0.95
-
-        self.text_item = QGraphicsTextItem(file_name, self)  # using first 5 characters of file_name, adjust as needed
-        self.text_item.setFont(QFont('Arial', 4))  # set font size
-
-        # Center the text item within the bubble.
-        self.text_item.setPos(
-            (self.rect().width() - self.text_item.boundingRect().width()) / 2,
-            (self.rect().height() - self.text_item.boundingRect().height()) / 2
-        )
 
         # Définis la couleur en fonction du type de fichier
         if file_type == '.pdf':
@@ -100,9 +89,6 @@ class FileBubble(QGraphicsEllipseItem):
         super().hoverEnterEvent(event)
         self.setToolTip(f"{self.file_name} - > {self.file_path}")
 
-    def hoverLeaveEvent(self, event):
-        super().hoverLeaveEvent(event)
-        self.setToolTip("")
 
 class MainWindow(QMainWindow):
     def __init__(self):
